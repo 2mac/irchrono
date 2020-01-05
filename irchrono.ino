@@ -50,7 +50,8 @@ unsigned long times[2];
 
 LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
 
-void setup()
+void
+setup()
 {
 	for (uint8_t i = 0; i < 2; ++i)
 	{
@@ -62,7 +63,8 @@ void setup()
 	lcd.begin(20, 4);
 }
 
-void check_sensor(uint8_t index)
+void
+check_sensor(uint8_t index)
 {
 	sensors[index] = analogRead(SENSOR_START + index);
 	states[index] = sensors[index] > THRESHOLD;
@@ -71,7 +73,8 @@ void check_sensor(uint8_t index)
 		times[index] = millis();
 }
 
-void loop()
+void
+loop()
 {
 	if (!states[0])
 	{
