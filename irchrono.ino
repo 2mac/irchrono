@@ -39,10 +39,16 @@
 #include <LiquidCrystal.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 
 #define SENSOR_START A0
 #define THRESHOLD 800
 #define DISTANCE_MM 50.0
+
+#define LCD_LINE_LEN 20
+#define LCD_NUM_LINES 4
+#define DOUBLE_PRINT_LEN 10
+#define DOUBLE_PRINT_DEC 7
 
 int sensors[2];
 boolean states[2];
@@ -60,10 +66,10 @@ setup()
 	}
 
 	Serial.begin(9600);
-	lcd.begin(20, 4);
+	lcd.begin(LCD_LINE_LEN, LCD_NUM_LINES);
 }
 
-void
+static void
 check_sensor(uint8_t index)
 {
 	sensors[index] = analogRead(SENSOR_START + index);
@@ -73,45 +79,51 @@ check_sensor(uint8_t index)
 		times[index] = millis();
 }
 
+static char *
+format_double(char *buf, const char *label, const double d)
+{
+	const size_t label_len = strlen(label);
+
+	strcpy(buf, label);
+	dtostrf(d, DOUBLE_PRINT_LEN, DOUBLE_PRINT_DEC, buf + label_len);
+
+	return buf;
+}
+
+static void
+output(const char *buf)
+{
+	lcd.print(buf);
+	Serial.print(buf);
+}
+
 void
 loop()
 {
 	if (!states[0])
-	{
 		check_sensor(0);
-	}
 
 	if (states[0])
-	{
 		check_sensor(1);
-	}
 
 	if (states[1])
 	{
 		unsigned long diff = times[1] - times[0];
 		double velocity = DISTANCE_MM / diff;
 		double mph = velocity * 2.2369;
-		char buf[20], temp[10];
-
-		Serial.print("Time: ");
-		Serial.print(diff);
-		Serial.print(", Velocity: ");
-		Serial.print(velocity);
-		Serial.print(" m/s = ");
-		Serial.print(mph);
-		Serial.println(" mph");
+		char buf[LCD_LINE_LEN + 1];
 
 		lcd.clear();
-		snprintf(buf, 20, "Time: %lu ms", diff);
-		lcd.print(buf);
+		Serial.println();
+
+		snprintf(buf, LCD_LINE_LEN, "Time: %lu ms", diff);
+		output(buf);
+
 		lcd.setCursor(0,1);
-		dtostrf(velocity, 10, 7, temp);
-		snprintf(buf, 20, "m/s: %s", temp);
-		lcd.print(buf);
+		output(format_double(buf, "m/s: ", velocity));
+
 		lcd.setCursor(0,2);
-		dtostrf(mph, 10, 7, temp);
-		snprintf(buf, 20, "mph: %s", temp);
-		lcd.print(buf);
+		output(format_double(buf, "mph: ", mph));
 
 		for (uint8_t i = 0; i < 2; ++i)
 			states[i] = 0;
