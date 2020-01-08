@@ -50,9 +50,14 @@
 #define DOUBLE_PRINT_LEN 10
 #define DOUBLE_PRINT_DEC 7
 
-int sensors[2];
-boolean states[2];
-unsigned long times[2];
+struct sensor
+{
+	uint8_t pin;
+	unsigned long trigger_time;
+	boolean state;
+};
+
+struct sensor sensors[2];
 
 LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
 
@@ -61,8 +66,9 @@ setup()
 {
 	for (uint8_t i = 0; i < 2; ++i)
 	{
-		states[i] = false;
-		times[i] = 0;
+		sensors[i].pin = SENSOR_START + i;
+		sensors[i].state = false;
+		sensors[i].trigger_time = 0;
 	}
 
 	Serial.begin(9600);
@@ -70,13 +76,15 @@ setup()
 }
 
 static void
-check_sensor(uint8_t index)
+check_sensor(struct sensor *sensor)
 {
-	sensors[index] = analogRead(SENSOR_START + index);
-	states[index] = sensors[index] > THRESHOLD;
+	int value = analogRead(sensor->pin);
+	boolean state = value > THRESHOLD;
 
-	if (states[index])
-		times[index] = millis();
+	sensor->state = state;
+
+	if (state)
+		sensor->trigger_time = millis();
 }
 
 static char *
@@ -100,15 +108,15 @@ output(const char *buf)
 void
 loop()
 {
-	if (!states[0])
-		check_sensor(0);
+	if (!sensors[0].state)
+		check_sensor(&sensors[0]);
 
-	if (states[0])
-		check_sensor(1);
+	if (sensors[0].state)
+		check_sensor(&sensors[1]);
 
-	if (states[1])
+	if (sensors[1].state)
 	{
-		unsigned long diff = times[1] - times[0];
+		unsigned long diff = sensors[1].trigger_time - sensors[0].trigger_time;
 		double velocity = DISTANCE_MM / diff;
 		double mph = velocity * 2.2369;
 		char buf[LCD_LINE_LEN + 1];
@@ -126,6 +134,6 @@ loop()
 		output(format_double(buf, "mph: ", mph));
 
 		for (uint8_t i = 0; i < 2; ++i)
-			states[i] = 0;
+			sensors[i].state = 0;
 	}
 }
