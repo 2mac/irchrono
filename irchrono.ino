@@ -44,6 +44,7 @@
 #define SENSOR_START A0
 #define THRESHOLD 800
 #define DISTANCE_MM 50.0
+#define REPEAT_TRIGGER_THRESHOLD 100
 
 #define LCD_LINE_LEN 20
 #define LCD_NUM_LINES 4
@@ -55,6 +56,8 @@ struct sensor
 	uint8_t pin;
 	unsigned long trigger_time;
 	boolean state;
+	boolean prev_state;
+	boolean triggered;
 };
 
 struct sensor sensors[2];
@@ -68,6 +71,7 @@ setup()
 	{
 		sensors[i].pin = SENSOR_START + i;
 		sensors[i].state = false;
+		sensors[i].prev_state = true;
 		sensors[i].trigger_time = 0;
 	}
 
@@ -75,16 +79,26 @@ setup()
 	lcd.begin(LCD_LINE_LEN, LCD_NUM_LINES);
 }
 
-static void
-check_sensor(struct sensor *sensor)
+static boolean
+check_sensor(const struct sensor *sensor)
 {
 	int value = analogRead(sensor->pin);
 	boolean state = value > THRESHOLD;
 
-	sensor->state = state;
+	return state;
+}
 
-	if (state)
-		sensor->trigger_time = millis();
+static void
+advance_sensor_state(struct sensor *sensor, const boolean state)
+{
+	sensor->prev_state = sensor->state;
+	sensor->state = state;
+}
+
+static void
+trigger_sensor(struct sensor *sensor)
+{
+	sensor->trigger_time = millis();
 }
 
 static char *
@@ -108,15 +122,31 @@ output(const char *buf)
 void
 loop()
 {
-	if (!sensors[0].state)
-		check_sensor(&sensors[0]);
-
-	if (sensors[0].state)
-		check_sensor(&sensors[1]);
-
-	if (sensors[1].state)
+	for (uint8_t i = 0; i < 2; ++i)
 	{
-		unsigned long diff = sensors[1].trigger_time - sensors[0].trigger_time;
+		struct sensor *sensor = &sensors[i];
+
+		advance_sensor_state(sensor, check_sensor(sensor));
+		if (sensor->state && !sensor->prev_state)
+		{
+			sensor->trigger_time = millis();
+			sensor->triggered = true;
+		}
+	}
+
+	if (sensors[0].state && !sensors[0].prev_state
+		&& !sensors[1].triggered)
+	{
+		unsigned long time = millis();
+		if (time - sensors[0].trigger_time > REPEAT_TRIGGER_THRESHOLD)
+			sensors[0].trigger_time = time;
+	}
+
+	if (sensors[1].triggered
+		&& sensors[1].trigger_time > sensors[0].trigger_time)
+	{
+		unsigned long diff = sensors[1].trigger_time
+			- sensors[0].trigger_time;
 		double velocity = DISTANCE_MM / diff;
 		double mph = velocity * 2.2369;
 		char buf[LCD_LINE_LEN + 1];
@@ -134,6 +164,6 @@ loop()
 		output(format_double(buf, "mph: ", mph));
 
 		for (uint8_t i = 0; i < 2; ++i)
-			sensors[i].state = 0;
+			sensors[i].triggered = false;
 	}
 }
