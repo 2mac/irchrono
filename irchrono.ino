@@ -41,6 +41,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#define STARTUP_GREETING "Ready."
+
 #define SENSOR_START A0
 #define THRESHOLD 800
 #define DISTANCE_MM 50.0
@@ -77,6 +79,8 @@ setup()
 
 	Serial.begin(9600);
 	lcd.begin(LCD_LINE_LEN, LCD_NUM_LINES);
+
+	lcd.print(STARTUP_GREETING);
 }
 
 static boolean
@@ -116,7 +120,7 @@ static void
 output(const char *buf)
 {
 	lcd.print(buf);
-	Serial.print(buf);
+	Serial.println(buf);
 }
 
 void
@@ -142,7 +146,7 @@ loop()
 			sensors[0].trigger_time = time;
 	}
 
-	if (sensors[1].triggered
+	if (sensors[1].triggered && sensors[0].triggered
 		&& sensors[1].trigger_time > sensors[0].trigger_time)
 	{
 		unsigned long diff = sensors[1].trigger_time
