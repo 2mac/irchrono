@@ -50,8 +50,8 @@
 
 #define LCD_LINE_LEN 20
 #define LCD_NUM_LINES 4
-#define DOUBLE_PRINT_LEN 10
-#define DOUBLE_PRINT_DEC 7
+#define DOUBLE_PRINT_LEN 9
+#define DOUBLE_PRINT_DEC 6
 
 struct sensor
 {
