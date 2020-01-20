@@ -106,12 +106,6 @@ advance_sensor_state(struct sensor *sensor, const boolean state)
 	sensor->state = state;
 }
 
-static void
-trigger_sensor(struct sensor *sensor)
-{
-	sensor->trigger_time = micros();
-}
-
 static char *
 format_double(char *buf, const char *label, const double d)
 {
