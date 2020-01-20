@@ -66,16 +66,23 @@ struct sensor sensors[2];
 
 LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
 
-void
-setup()
+static void
+reset_sensors()
 {
 	for (uint8_t i = 0; i < 2; ++i)
 	{
 		sensors[i].pin = SENSOR_START + i;
 		sensors[i].state = false;
 		sensors[i].prev_state = true;
+		sensors[i].triggered = false;
 		sensors[i].trigger_time = 0;
 	}
+}
+
+void
+setup()
+{
+	reset_sensors();
 
 	Serial.begin(9600);
 	lcd.begin(LCD_LINE_LEN, LCD_NUM_LINES);
@@ -167,7 +174,6 @@ loop()
 		lcd.setCursor(0,2);
 		output(format_double(buf, "mph: ", mph));
 
-		for (uint8_t i = 0; i < 2; ++i)
-			sensors[i].triggered = false;
+		reset_sensors();
 	}
 }
