@@ -41,7 +41,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define STARTUP_GREETING "Ready."
+#define VERSION "0.3"
 
 #define SENSOR_START A0
 #define THRESHOLD 800
@@ -60,6 +60,14 @@ struct sensor
 	boolean state;
 	boolean prev_state;
 	boolean triggered;
+};
+
+const char STARTUP_GREETING[LCD_NUM_LINES][LCD_LINE_LEN + 1] =
+{
+	"irchrono v" VERSION,
+	"(C) 2020 David M. II",
+	"",
+	"Ready."
 };
 
 struct sensor sensors[2];
@@ -87,7 +95,11 @@ setup()
 	Serial.begin(9600);
 	lcd.begin(LCD_LINE_LEN, LCD_NUM_LINES);
 
-	lcd.print(STARTUP_GREETING);
+	for (uint8_t i = 0; i < LCD_NUM_LINES; ++i)
+	{
+		lcd.setCursor(0, i);
+		lcd.print(STARTUP_GREETING[i]);
+	}
 }
 
 static boolean
@@ -162,10 +174,10 @@ loop()
 
 		output(format_double(buf, "Time (ms): ", milliseconds));
 
-		lcd.setCursor(0,1);
+		lcd.setCursor(0, 1);
 		output(format_double(buf, "m/s: ", velocity));
 
-		lcd.setCursor(0,2);
+		lcd.setCursor(0, 2);
 		output(format_double(buf, "mph: ", mph));
 
 		reset_sensors();
