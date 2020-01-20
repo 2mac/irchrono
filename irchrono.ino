@@ -102,7 +102,7 @@ advance_sensor_state(struct sensor *sensor, const boolean state)
 static void
 trigger_sensor(struct sensor *sensor)
 {
-	sensor->trigger_time = millis();
+	sensor->trigger_time = micros();
 }
 
 static char *
@@ -133,7 +133,7 @@ loop()
 		advance_sensor_state(sensor, check_sensor(sensor));
 		if (sensor->state && !sensor->prev_state)
 		{
-			sensor->trigger_time = millis();
+			sensor->trigger_time = micros();
 			sensor->triggered = true;
 		}
 	}
@@ -141,7 +141,7 @@ loop()
 	if (sensors[0].state && !sensors[0].prev_state
 		&& !sensors[1].triggered)
 	{
-		unsigned long time = millis();
+		unsigned long time = micros();
 		if (time - sensors[0].trigger_time > REPEAT_TRIGGER_THRESHOLD)
 			sensors[0].trigger_time = time;
 	}
@@ -151,15 +151,15 @@ loop()
 	{
 		unsigned long diff = sensors[1].trigger_time
 			- sensors[0].trigger_time;
-		double velocity = DISTANCE_MM / diff;
+		double milliseconds = diff / 1000.0;
+		double velocity = (DISTANCE_MM * 1000.0) / diff;
 		double mph = velocity * 2.2369;
 		char buf[LCD_LINE_LEN + 1];
 
 		lcd.clear();
 		Serial.println();
 
-		snprintf(buf, LCD_LINE_LEN, "Time: %lu ms", diff);
-		output(buf);
+		output(format_double(buf, "Time (ms): ", milliseconds));
 
 		lcd.setCursor(0,1);
 		output(format_double(buf, "m/s: ", velocity));

@@ -2,3 +2,12 @@ irchrono
 ========
 
 An Arduino chronograph using infrared light sensors.
+
+Notes
+-----
+
+This sketch uses the `micros()` function which will overflow in less than an
+hour. It is assumed that one would not go for more than a few seconds between
+triggering the sensors, so this would not affect normal operation. If your use
+case involves several minutes between the sensors, you should use the
+`millis()` function instead which will take days to overflow.
